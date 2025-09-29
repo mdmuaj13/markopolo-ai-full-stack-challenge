@@ -10,13 +10,7 @@ A full-stack web application built with Next.js and FastAPI for managing AI camp
    - Docker
    - Docker Compose
 
-2. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd marko-challenge
-   ```
-
-3. **Start with Docker**
+2. **Start with Docker**
    ```bash
    # Build and start all services
    docker-compose up --build
@@ -25,12 +19,12 @@ A full-stack web application built with Next.js and FastAPI for managing AI camp
    docker-compose up -d --build
    ```
 
-4. **Access the application**
+3. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs (Swagger UI): http://localhost:8000/docs
 
-5. **Stop the application**
+4. **Stop the application**
    ```bash
    docker-compose down
    ```
@@ -140,10 +134,25 @@ Once the backend is running, you can access the interactive API documentation at
 
 - Swagger UI: http://localhost:8000/docs
 
-## 📝 License
+## 🎥 Demo
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Home Page
+![Home Page](assets/Markopolo-home.png)
 
----
+### Input Form
+![Input Form](assets/Markopolo-home-input.png)
 
-Made with ❤️ by [Your Name]
+### Campaign Creation
+![Campaign Creation](assets/Markopolo-campagin.png)
+
+### Chat Interface
+![Chat Interface](assets/Markopolo-home-chat.png)
+
+
+## Author
+
+#### Md. Mohaiminul Hasan
+- [mohaiminulhasan@gmail.com](mailto:mohaiminulhasan@gmail.com)
+- [+88 017 01 00 91 98](tel:+8801701009198)
+- [https://mohaiminul.online](https://mohaiminul.online)
+- [Resume](https://cdn.jsdelivr.net/gh/mdmuaj13/mdmuaj13@master/resume/Mohaiminul_Hasan_s_Resume_280725.pdf)

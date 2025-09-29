@@ -72,10 +72,20 @@ def generate_comprehensive_response(
     # Build the response with actionable blocks
     actionable_content = "\n\n".join(actionable_blocks) if actionable_blocks else ""
 
+    # Safe data source names extraction
+    data_source_names = "various sources"
+    if data_sources:
+        try:
+            names = [ds.name for ds in data_sources if hasattr(ds, 'name')]
+            if names:
+                data_source_names = ", ".join(names)
+        except Exception:
+            data_source_names = "various sources"
+
     response = f"""
 This is a simulated AI assistant that can help you with various tasks including:
 
-1. **Data Analysis**: I can analyze data from multiple sources you've provided including {", ".join([ds.name for ds in data_sources]) if data_sources else "various sources"}.
+1. **Data Analysis**: I can analyze data from multiple sources you've provided including {data_source_names}.
 
 2. **Multi-Channel Communication**: {"Your selected channels (" + ", ".join(channels) + ") will be used for distributing this information." if channels else "I can communicate through multiple channels when configured."}
 
