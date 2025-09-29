@@ -1,14 +1,15 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
 	Search,
 	Globe,
 	Tags,
-	Paperclip,
-	Facebook,
+	Mail,
+	MessageSquare,
+	Phone,
+	Bell,
 	ArrowRight,
-	Cpu,
-	Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -23,64 +24,65 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const SearchBox = () => {
+	const router = useRouter();
 	const [query, setQuery] = useState('');
-	const [searchMode, setSearchMode] = useState('search');
-
-	// Track which modes are submitted/active
+	// Track which communication channels are active
 	const [activeModes, setActiveModes] = useState({
-		search: false,
-		research: false,
-		gtm: false,
+		email: false,
+		sms: false,
+		whatsapp: false,
+		push: false,
 	});
 
-	// Dropdown open states
-	const [dropdownStates, setDropdownStates] = useState({
-		search: false,
-		research: false,
-		gtm: false,
-	});
-
-	// State for dropdown switches and inputs
-	const [searchModeEnabled, setSearchModeEnabled] = useState(false);
+	// State for dropdown switches and inputs (for right side)
 	const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+	const [searchModeEnabled, setSearchModeEnabled] = useState(false);
 	const [tagsEnabled, setTagsEnabled] = useState(false);
-	const [attachFileEnabled, setAttachFileEnabled] = useState(false);
-	const [settingsEnabled, setSettingsEnabled] = useState(false);
 
-	// State for input values
-	const [searchModeInput, setSearchModeInput] = useState('');
+	// State for input values (for right side)
 	const [webSearchInput, setWebSearchInput] = useState('');
+	const [searchModeInput, setSearchModeInput] = useState('');
 	const [tagsInput, setTagsInput] = useState('');
-	const [attachFileInput, setAttachFileInput] = useState('');
-	const [settingsInput, setSettingsInput] = useState('');
 
-	// State for individual mode dropdown inputs
-	const [facebookInput, setFacebookInput] = useState('');
-	const [globeInput, setGlobeInput] = useState('');
-	const [tagsInputValue, setTagsInputValue] = useState('');
+	// Toggle handlers for communication channel buttons
+	const handleToggleEmail = () => {
+		setActiveModes((prev) => ({ ...prev, email: !prev.email }));
+	};
 
-	// Submit handlers
-	const handleSubmitSearch = () => {
-		if (facebookInput.trim()) {
-			setActiveModes((prev) => ({ ...prev, search: true }));
-			setSearchMode('search');
-			setDropdownStates((prev) => ({ ...prev, search: false }));
+	const handleToggleSms = () => {
+		setActiveModes((prev) => ({ ...prev, sms: !prev.sms }));
+	};
+
+	const handleToggleWhatsapp = () => {
+		setActiveModes((prev) => ({ ...prev, whatsapp: !prev.whatsapp }));
+	};
+
+	const handleTogglePush = () => {
+		setActiveModes((prev) => ({ ...prev, push: !prev.push }));
+	};
+
+	const handleSubmit = () => {
+		if (query.trim()) {
+			const payload = {
+				query: query.trim(),
+				activeModes,
+				webSearch: webSearchEnabled ? webSearchInput : null,
+				searchMode: searchModeEnabled ? searchModeInput : null,
+				tags: tagsEnabled ? tagsInput : null,
+			};
+
+			sessionStorage.setItem('chatPayload', JSON.stringify(payload));
+			router.push('/chat');
 		}
 	};
 
-	const handleSubmitResearch = () => {
-		if (globeInput.trim()) {
-			setActiveModes((prev) => ({ ...prev, research: true }));
-			setSearchMode('research');
-			setDropdownStates((prev) => ({ ...prev, research: false }));
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey)) {
+			return;
 		}
-	};
-
-	const handleSubmitTags = () => {
-		if (tagsInputValue.trim()) {
-			setActiveModes((prev) => ({ ...prev, gtm: true }));
-			setSearchMode('gtm');
-			setDropdownStates((prev) => ({ ...prev, gtm: false }));
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			handleSubmit();
 		}
 	};
 
@@ -96,6 +98,7 @@ const SearchBox = () => {
 									<textarea
 										value={query}
 										onChange={(e) => setQuery(e.target.value)}
+										onKeyDown={handleKeyDown}
 										placeholder="Ask anything or @mention a Space"
 										className="w-full max-h-[45vh] lg:max-h-[40vh] sm:max-h-[25vh] outline-none font-sans resize-none text-foreground bg-transparent placeholder:text-muted-foreground overflow-auto border-none p-0"
 										style={{
@@ -108,143 +111,46 @@ const SearchBox = () => {
 								</div>
 							</div>
 
-							{/* Left Side - Search Mode Toggle */}
+							{/* Left Side - Communication Channels */}
 							<div className="flex col-start-1 row-start-2 gap-1">
 								<div className="flex items-center gap-1">
 									<div className="group relative isolate flex h-fit focus:outline-none bg-secondary/20 rounded-lg">
-										<div className="p-0.5 flex shrink-0 items-center ">
-											<DropdownMenu
-												open={dropdownStates.search}
-												onOpenChange={(open) =>
-													setDropdownStates((prev) => ({
-														...prev,
-														search: open,
-													}))
-												}>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant={activeModes.search ? 'secondary' : 'ghost'}
-														size="sm"
-														className="h-8 min-w-9 px-2.5 text-xs">
-														<Facebook className="w-4 h-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="start"
-													className="w-64 bg-secondary/20">
-													<div className="px-3 py-2">
-														<div className="flex items-center gap-2">
-															<Input
-																placeholder="Enter search parameters..."
-																value={facebookInput}
-																onChange={(e) =>
-																	setFacebookInput(e.target.value)
-																}
-																className="text-sm"
-																onKeyDown={(e) => {
-																	if (e.key === 'Enter') {
-																		handleSubmitSearch();
-																	}
-																}}
-															/>
-															<Button
-																size="sm"
-																variant="ghost"
-																className="h-8 w-8 p-0"
-																onClick={handleSubmitSearch}>
-																<Send className="w-4 h-4" />
-															</Button>
-														</div>
-													</div>
-												</DropdownMenuContent>
-											</DropdownMenu>
-											<DropdownMenu
-												open={dropdownStates.research}
-												onOpenChange={(open) =>
-													setDropdownStates((prev) => ({
-														...prev,
-														research: open,
-													}))
-												}>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant={
-															activeModes.research ? 'secondary' : 'ghost'
-														}
-														size="sm"
-														className="h-8 min-w-9 px-2.5 text-xs">
-														<Globe className="w-4 h-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="start"
-													className="w-64 bg-secondary/20">
-													<div className="px-3 py-2">
-														<div className="flex items-center gap-2">
-															<Input
-																placeholder="Enter research topic..."
-																value={globeInput}
-																onChange={(e) => setGlobeInput(e.target.value)}
-																className="text-sm"
-																onKeyDown={(e) => {
-																	if (e.key === 'Enter') {
-																		handleSubmitResearch();
-																	}
-																}}
-															/>
-															<Button
-																size="sm"
-																variant="ghost"
-																className="h-8 w-8 p-0"
-																onClick={handleSubmitResearch}>
-																<Send className="w-4 h-4" />
-															</Button>
-														</div>
-													</div>
-												</DropdownMenuContent>
-											</DropdownMenu>
-											<DropdownMenu
-												open={dropdownStates.gtm}
-												onOpenChange={(open) =>
-													setDropdownStates((prev) => ({ ...prev, gtm: open }))
-												}>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant={activeModes.gtm ? 'secondary' : 'ghost'}
-														size="sm"
-														className="h-8 min-w-9 px-2.5 text-xs">
-														<Tags className="w-4 h-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="start"
-													className="w-64 bg-secondary/20">
-													<div className="px-3 py-2">
-														<div className="flex items-center gap-2">
-															<Input
-																placeholder="Enter tags..."
-																value={tagsInputValue}
-																onChange={(e) =>
-																	setTagsInputValue(e.target.value)
-																}
-																className="text-sm"
-																onKeyDown={(e) => {
-																	if (e.key === 'Enter') {
-																		handleSubmitTags();
-																	}
-																}}
-															/>
-															<Button
-																size="sm"
-																variant="ghost"
-																className="h-8 w-8 p-0"
-																onClick={handleSubmitTags}>
-																<Send className="w-4 h-4" />
-															</Button>
-														</div>
-													</div>
-												</DropdownMenuContent>
-											</DropdownMenu>
+										<div className="p-0.5 flex shrink-0 items-center gap-0.5">
+											{/* Email Button */}
+											<Button
+												variant={activeModes.email ? 'secondary' : 'ghost'}
+												size="sm"
+												className="h-8 min-w-9 px-2.5 text-xs"
+												onClick={handleToggleEmail}>
+												<Mail className="w-4 h-4" />
+											</Button>
+
+											{/* SMS Button */}
+											<Button
+												variant={activeModes.sms ? 'secondary' : 'ghost'}
+												size="sm"
+												className="h-8 min-w-9 px-2.5 text-xs"
+												onClick={handleToggleSms}>
+												<MessageSquare className="w-4 h-4" />
+											</Button>
+
+											{/* WhatsApp Button */}
+											<Button
+												variant={activeModes.whatsapp ? 'secondary' : 'ghost'}
+												size="sm"
+												className="h-8 min-w-9 px-2.5 text-xs"
+												onClick={handleToggleWhatsapp}>
+												<Phone className="w-4 h-4" />
+											</Button>
+
+											{/* Push Button */}
+											<Button
+												variant={activeModes.push ? 'secondary' : 'ghost'}
+												size="sm"
+												className="h-8 min-w-9 px-2.5 text-xs"
+												onClick={handleTogglePush}>
+												<Bell className="w-4 h-4" />
+											</Button>
 										</div>
 									</div>
 								</div>
@@ -344,7 +250,8 @@ const SearchBox = () => {
 									<Button
 										variant="secondary"
 										size="sm"
-										className="h-8 aspect-square p-0">
+										className="h-8 aspect-square p-0"
+										onClick={handleSubmit}>
 										<ArrowRight className="w-4 h-4" />
 									</Button>
 								</div>
