@@ -8,6 +8,7 @@ from typing import Dict
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
+from src.api.routes import register_routes
 
 
 class MarkdownType(str, Enum):
@@ -88,35 +89,6 @@ async def markdown_event_generator(request: Request):
         await asyncio.sleep(random.uniform(1.0, 3.0))
 
 
-async def event_generator(request: Request):
-    """
-    Generates server-sent events. The loop will stop if the client disconnects.
-    """
-    count = 0
-    while True:
-        # Check if the client has disconnected
-        if await request.is_disconnected():
-            print("Client disconnected.")
-            break
-
-        # Create some dummy data
-        count += 1
-        json_data = json.dumps(
-            {
-                "id": count,
-                "message": f"Hello! This is message #{count}",
-                "value": random.randint(1, 100),
-                "timestamp": datetime.now().isoformat(),
-            }
-        )
-
-        # Yield the data in the format required by SSE
-        yield {"data": json_data}
-
-        # Wait for 1 second before sending the next event
-        await asyncio.sleep(1)
-
-
 # Define the SSE endpoints
 @app.get("/stream")
 async def stream_events(request: Request):
@@ -127,15 +99,11 @@ async def stream_events(request: Request):
     # return EventSourceResponse(event_generator(request))
 
 
-@app.get("/markdown-stream")
-async def markdown_stream_events(request: Request):
-    """
-    This endpoint establishes an SSE connection that streams markdown content.
-    """
-    return EventSourceResponse(markdown_event_generator(request))
-
 
 # A simple root endpoint to check if the server is running
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "FastAPI server is running"}
+
+
+register_routes(app)

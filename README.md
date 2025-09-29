@@ -5,43 +5,27 @@ A full-stack web application built with Next.js and FastAPI for managing AI camp
 ## 🚀 Quick Start
 
 1. **Prerequisites**
+
    - Node.js (v16 or later)
    - Python (3.8 or later)
    - pnpm (recommended) or npm
 
 2. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd marko-challenge
    ```
 
 3. **Start the application**
-   
+
    You can start both client and server together or individually:
-   
-   #### Option 1: Start both client and server (recommended for development)
+
+   #### Start both client and server (recommended for development)
+
    ```bash
-   # Make the start script executable (first time only)
-   chmod +x start.sh
-   
    # Start both frontend and backend
-   ./start.sh
-   ```
-   
-   #### Option 2: Start server only
-   ```bash
-   cd server
-   python -m venv env
-   source env/bin/activate
-   pip install -r requirements.txt
-   uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-   
-   #### Option 3: Start client only
-   ```bash
-   cd client
-   pnpm install
-   pnpm run dev
+   npm run dev
    ```
 
 4. **Access the application**
@@ -71,6 +55,7 @@ marko-challenge/
 ## 🛠️ Development
 
 ### Frontend Development
+
 ```bash
 cd client
 pnpm install    # Install dependencies
@@ -78,6 +63,7 @@ pnpm dev       # Start development server
 ```
 
 ### Backend Development
+
 ```bash
 cd server
 python -m venv venv
@@ -89,8 +75,8 @@ uvicorn src.main:app --reload
 ## 🌐 API Documentation
 
 Once the backend is running, you can access the interactive API documentation at:
+
 - Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
 
 ## 📝 License
 

@@ -1,0 +1,10 @@
+{
+  "name": "marko-challenge",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "server": "cd server && source env/bin/activate && uvicorn src.main:app --reload",
+    "client": "cd client && pnpm dev",
+    "dev": "pnpm run server & pnpm run client"
+  }
+}
