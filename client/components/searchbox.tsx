@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
 	Search,
 	Globe,
@@ -10,6 +11,9 @@ import {
 	Phone,
 	Bell,
 	ArrowRight,
+	Database,
+	Check,
+	X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -18,14 +22,13 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 const SearchBox = () => {
 	const router = useRouter();
 	const [query, setQuery] = useState('');
+	const [toolCount, setToolCount] = useState(0);
 	// Track which communication channels are active
 	const [activeModes, setActiveModes] = useState({
 		email: false,
@@ -34,15 +37,51 @@ const SearchBox = () => {
 		push: false,
 	});
 
-	// State for dropdown switches and inputs (for right side)
-	const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-	const [searchModeEnabled, setSearchModeEnabled] = useState(false);
-	const [tagsEnabled, setTagsEnabled] = useState(false);
+	// State for search types and their configurations
+	const [searchTypes, setSearchTypes] = useState({
+		website: {
+			enabled: false,
+			url: 'https://'
+		},
+		facebook_page: {
+			enabled: false,
+			pageUrl: 'https://'
+		},
+		crms: {
+			enabled: false
+		}
+	});
 
-	// State for input values (for right side)
-	const [webSearchInput, setWebSearchInput] = useState('');
-	const [searchModeInput, setSearchModeInput] = useState('');
-	const [tagsInput, setTagsInput] = useState('');
+	// URL validation helper
+	const isValidUrl = (urlString: string): boolean => {
+		try {
+			const url = new URL(urlString);
+			return url.protocol === 'http:' || url.protocol === 'https:';
+		} catch {
+			return false;
+		}
+	};
+
+	// Facebook URL validation helper
+	const isValidFacebookUrl = (urlString: string): boolean => {
+		if (!isValidUrl(urlString)) return false;
+		try {
+			const url = new URL(urlString);
+			return url.hostname.includes('facebook.com') || url.hostname.includes('fb.com');
+		} catch {
+			return false;
+		}
+	};
+
+	// Check if website URL is valid
+	const isWebsiteValid = searchTypes.website.enabled && searchTypes.website.url.trim() && isValidUrl(searchTypes.website.url);
+
+	// Check if Facebook page URL is valid
+	const isFacebookValid = searchTypes.facebook_page.enabled && searchTypes.facebook_page.pageUrl.trim() && isValidFacebookUrl(searchTypes.facebook_page.pageUrl);
+
+	// Count active and valid data sources
+	const activeDataSourcesCount = [isWebsiteValid, isFacebookValid, searchTypes.crms.enabled].filter(Boolean).length;
+
 
 	// Toggle handlers for communication channel buttons
 	const handleToggleEmail = () => {
@@ -62,18 +101,35 @@ const SearchBox = () => {
 	};
 
 	const handleSubmit = () => {
-		if (query.trim()) {
-			const payload = {
-				query: query.trim(),
-				activeModes,
-				webSearch: webSearchEnabled ? webSearchInput : null,
-				searchMode: searchModeEnabled ? searchModeInput : null,
-				tags: tagsEnabled ? tagsInput : null,
-			};
+		if (!query.trim()) return;
 
-			sessionStorage.setItem('chatPayload', JSON.stringify(payload));
-			router.push('/chat');
+		// Validate search types if enabled
+		if (searchTypes.website.enabled && !isWebsiteValid) {
+			toast.error('Please enter a valid website URL', {
+				description: 'Example: https://example.com'
+			});
+			return;
 		}
+
+		if (searchTypes.facebook_page.enabled && !isFacebookValid) {
+			toast.error('Please enter a valid Facebook page URL', {
+				description: 'Example: https://facebook.com/yourpage'
+			});
+			return;
+		}
+
+		const payload = {
+			query: query.trim(),
+			activeModes,
+			searchTypes: {
+				website: searchTypes.website.enabled ? searchTypes.website.url : null,
+				facebook_page: searchTypes.facebook_page.enabled ? searchTypes.facebook_page.pageUrl : null,
+				crms: searchTypes.crms.enabled
+			},
+		};
+
+		sessionStorage.setItem('chatPayload', JSON.stringify(payload));
+		router.push('/chat');
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -158,13 +214,42 @@ const SearchBox = () => {
 
 							{/* Right Side - Action Buttons */}
 							<div className="flex items-center justify-self-end col-start-3 row-start-2 gap-1">
+								{/* Active Data Source Icons with Confirmation */}
+								{activeDataSourcesCount > 0 && (
+									<div className="flex items-center gap-0.5 mr-1 bg-secondary/20 rounded-lg p-0.5">
+										{isWebsiteValid && (
+											<div className="h-7 px-2 flex items-center gap-1 bg-secondary rounded">
+												<Globe className="w-3.5 h-3.5 text-foreground" />
+												<Check className="w-3 h-3 text-green-500" />
+											</div>
+										)}
+										{isFacebookValid && (
+											<div className="h-7 px-2 flex items-center gap-1 bg-secondary rounded">
+												<Search className="w-3.5 h-3.5 text-foreground" />
+												<Check className="w-3 h-3 text-green-500" />
+											</div>
+										)}
+										{searchTypes.crms.enabled && (
+											<div className="h-7 px-2 flex items-center gap-1 bg-secondary rounded">
+												<Database className="w-3.5 h-3.5 text-foreground" />
+												<Check className="w-3 h-3 text-green-500" />
+											</div>
+										)}
+									</div>
+								)}
+
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
 										<Button
-											variant="ghost"
+											variant={activeDataSourcesCount > 0 ? "secondary" : "ghost"}
 											size="sm"
-											className="h-8 aspect-square p-0 hover:bg-muted">
-											<Globe className="w-4 h-4 text-muted-foreground" />
+											className="h-8 px-2.5 hover:bg-muted relative">
+											<Database className="w-4 h-4" />
+											{activeDataSourcesCount > 0 && (
+												<span className="ml-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
+													{activeDataSourcesCount}
+												</span>
+											)}
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent
@@ -173,7 +258,7 @@ const SearchBox = () => {
 										{/* <DropdownMenuLabel>Data Source</DropdownMenuLabel> */}
 										{/* <DropdownMenuSeparator /> */}
 
-										{/* Web Search */}
+										{/* Website Search */}
 										<DropdownMenuItem
 											className="flex items-center justify-between px-3 py-2"
 											onClick={(e) => e.preventDefault()}>
@@ -182,68 +267,108 @@ const SearchBox = () => {
 												<span>Website</span>
 											</div>
 											<Switch
-												checked={webSearchEnabled}
-												onCheckedChange={setWebSearchEnabled}
+												checked={searchTypes.website.enabled}
+												onCheckedChange={(checked) => 
+													setSearchTypes(prev => ({
+														...prev,
+														website: { ...prev.website, enabled: checked }
+													}))
+												}
 											/>
 										</DropdownMenuItem>
-										{webSearchEnabled && (
+										{searchTypes.website.enabled && (
 											<div className="px-3 pb-2">
-												<Input
-													placeholder="Enter website url..."
-													value={webSearchInput}
-													onChange={(e) => setWebSearchInput(e.target.value)}
-													className="text-sm"
-												/>
+												<div className="relative">
+													<Input
+														placeholder="Enter website URL..."
+														value={searchTypes.website.url}
+														onChange={(e) =>
+															setSearchTypes(prev => ({
+																...prev,
+																website: { ...prev.website, url: e.target.value }
+															}))
+														}
+														onKeyDown={(e) => e.stopPropagation()}
+														className="text-sm pr-8"
+													/>
+													{searchTypes.website.url.trim() && (
+														<div className="absolute right-2 top-1/2 -translate-y-1/2">
+															{isWebsiteValid ? (
+																<Check className="w-4 h-4 text-green-500" />
+															) : (
+																<X className="w-4 h-4 text-red-500" />
+															)}
+														</div>
+													)}
+												</div>
 											</div>
 										)}
 
-										{/* Search Mode */}
+										{/* Facebook Page */}
 										<DropdownMenuItem
 											className="flex items-center justify-between px-3 py-2"
 											onClick={(e) => e.preventDefault()}>
 											<div className="flex items-center">
 												<Search className="mr-2 h-4 w-4" />
-												<span>Search Mode</span>
+												<span>Facebook Page</span>
 											</div>
 											<Switch
-												checked={searchModeEnabled}
-												onCheckedChange={setSearchModeEnabled}
+												checked={searchTypes.facebook_page.enabled}
+												onCheckedChange={(checked) => 
+													setSearchTypes(prev => ({
+														...prev,
+														facebook_page: { ...prev.facebook_page, enabled: checked }
+													}))
+												}
 											/>
 										</DropdownMenuItem>
-										{searchModeEnabled && (
+										{searchTypes.facebook_page.enabled && (
 											<div className="px-3 pb-2">
-												<Input
-													placeholder="Enter search mode settings..."
-													value={searchModeInput}
-													onChange={(e) => setSearchModeInput(e.target.value)}
-													className="text-sm"
-												/>
+												<div className="relative">
+													<Input
+														placeholder="Enter Facebook page URL..."
+														value={searchTypes.facebook_page.pageUrl}
+														onChange={(e) =>
+															setSearchTypes(prev => ({
+																...prev,
+																facebook_page: { ...prev.facebook_page, pageUrl: e.target.value }
+															}))
+														}
+														onKeyDown={(e) => e.stopPropagation()}
+														className="text-sm pr-8"
+													/>
+													{searchTypes.facebook_page.pageUrl.trim() && (
+														<div className="absolute right-2 top-1/2 -translate-y-1/2">
+															{isFacebookValid ? (
+																<Check className="w-4 h-4 text-green-500" />
+															) : (
+																<X className="w-4 h-4 text-red-500" />
+															)}
+														</div>
+													)}
+												</div>
 											</div>
 										)}
 
-										{/* Tags */}
+										{/* CRMs */}
 										<DropdownMenuItem
 											className="flex items-center justify-between px-3 py-2"
 											onClick={(e) => e.preventDefault()}>
 											<div className="flex items-center">
-												<Tags className="mr-2 h-4 w-4" />
-												<span>Google Tag Manager</span>
+												<Database className="mr-2 h-4 w-4" />
+												<span>CRMs</span>
 											</div>
 											<Switch
-												checked={tagsEnabled}
-												onCheckedChange={setTagsEnabled}
+												checked={searchTypes.crms.enabled}
+												onCheckedChange={(checked) =>
+													setSearchTypes(prev => ({
+														...prev,
+														crms: { enabled: checked }
+													}))
+												}
 											/>
 										</DropdownMenuItem>
-										{tagsEnabled && (
-											<div className="px-3 pb-2">
-												<Input
-													placeholder="Enter gtm id..."
-													value={tagsInput}
-													onChange={(e) => setTagsInput(e.target.value)}
-													className="text-sm"
-												/>
-											</div>
-										)}
+
 									</DropdownMenuContent>
 								</DropdownMenu>
 								<div className="ml-1">

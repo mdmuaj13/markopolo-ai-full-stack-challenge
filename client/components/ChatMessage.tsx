@@ -42,17 +42,40 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           {message.content}
         </p>
 
-        {/* Launch Campaign Button */}
+        {/* Actionable Data Display & Launch Campaign Button */}
         {message.role === 'assistant' &&
          message.actionableData &&
          !message.isStreaming &&
          message.content.includes('🚀 **Launch') && (
-          <div className="mt-3">
+          <div className="mt-4 space-y-3">
+            {/* Campaign Details */}
+            <div className="bg-background/50 rounded-md p-3 space-y-2 text-sm border border-border/50">
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-muted-foreground min-w-[80px]">⏰ Time:</span>
+                <span className="text-foreground">{message.actionableData.time}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-muted-foreground min-w-[80px]">📢 Channel:</span>
+                <span className="text-foreground">{message.actionableData.channel}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-muted-foreground min-w-[80px]">💬 Message:</span>
+                <span className="text-foreground">{message.actionableData.message}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-muted-foreground min-w-[80px]">👥 Audience:</span>
+                <span className="text-foreground">
+                  {message.actionableData.audience.length} recipient{message.actionableData.audience.length > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Launch Button */}
             <Button
               onClick={handleLaunchCampaign}
               disabled={isLaunching}
               size="sm"
-              className="bg-green-600 hover:bg-green-600 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white w-full"
             >
               {isLaunching ? (
                 <>

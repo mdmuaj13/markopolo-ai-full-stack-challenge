@@ -30,7 +30,7 @@ const ChatContainer = () => {
 		launchingCampaigns,
 		handleLaunchCampaign,
 		textareaRef,
-	} = useChat(initialPayload?.query);
+	} = useChat(initialPayload?.query, { initialPayload });
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 

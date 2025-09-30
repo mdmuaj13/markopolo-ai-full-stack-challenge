@@ -38,9 +38,10 @@ interface ChatData {
 interface UseChatOptions {
   initialMessages?: Message[];
   apiUrl?: string;
+  initialPayload?: any;
 }
 
-export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 'http://localhost:8000/stream/chat' }: UseChatOptions = {}) => {
+export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 'http://localhost:8000/stream/chat', initialPayload }: UseChatOptions = {}) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,18 +49,11 @@ export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialQueryProcessedRef = useRef(false);
 
-  // Initialize with a welcome message if no initial messages
-  // useEffect(() => {
-  //   if (messages.length === 0 && !initialQuery) {
-  //     setMessages([]);
-  //   }
-  // }, []);
-
   // Process initial query from search page
   useEffect(() => {
     if (initialQuery && !initialQueryProcessedRef.current) {
       initialQueryProcessedRef.current = true;
-      sendMessage(initialQuery);
+      sendMessage(initialQuery, initialPayload);
     }
   }, [initialQuery]);
 
@@ -110,7 +104,7 @@ export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 
     }
   };
 
-  const sendMessage = async (userInput: string) => {
+  const sendMessage = async (userInput: string, payload?: any) => {
     if (!userInput.trim() || isLoading) return;
 
     const userMessage: Message = {
@@ -138,19 +132,71 @@ export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 
     setMessages(prev => [...prev, initialAssistantMessage]);
 
     try {
+      // Build data sources array
+      const dataSources = [
+        {
+          name: "chat_interface",
+          data: {
+            timestamp: new Date().toISOString(),
+            user_input: userInput
+          }
+        }
+      ];
+
+      // Add data sources from searchTypes
+      if (payload?.searchTypes) {
+        // Add website data source if provided
+        if (payload.searchTypes.website) {
+          dataSources.push({
+            name: "website",
+            data: {
+              url: payload.searchTypes.website,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+
+        // Add facebook_page data source if provided
+        if (payload.searchTypes.facebook_page) {
+          dataSources.push({
+            name: "facebook_page",
+            data: {
+              url: payload.searchTypes.facebook_page,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+
+        // Add crms data source if enabled
+        if (payload.searchTypes.crms) {
+          dataSources.push({
+            name: "crms",
+            data: {
+              enabled: true,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      }
+
+      // Build channels array from activeModes
+      const channels: string[] = [];
+      if (payload?.activeModes) {
+        if (payload.activeModes.email) channels.push("email");
+        if (payload.activeModes.sms) channels.push("sms");
+        if (payload.activeModes.whatsapp) channels.push("whatsapp");
+        if (payload.activeModes.push) channels.push("push");
+      }
+      // Default to web if no channels selected
+      if (channels.length === 0) {
+        channels.push("web");
+      }
+
       // Prepare chat data for the API
       const chatData: ChatData = {
         message: userInput,
-        data_source: [
-          {
-            name: "chat_interface",
-            data: {
-              timestamp: new Date().toISOString(),
-              user_input: userInput
-            }
-          }
-        ],
-        channel: ["web"] // Default channel for web chat
+        data_source: dataSources,
+        channel: channels
       };
 
       // Connect to SSE stream with POST data
@@ -233,11 +279,9 @@ export const useChat = (initialQuery?: string, { initialMessages = [], apiUrl = 
                       if (msg.id === assistantMessageId) {
                         let finalContent = streamedContent.trim() || 'Response completed.';
 
-                        // If there's actionable data, append campaign launch message
+                        // If there's actionable data, just add a marker (details will be shown in ChatMessage component)
                         if (msg.actionableData) {
-                          const channel = msg.actionableData.channel;
-                          const audienceCount = msg.actionableData.audience.length;
-                          finalContent += `\n\n🚀 **Launch ${channel} campaign?**\n📧 Targeting ${audienceCount} recipient${audienceCount > 1 ? 's' : ''}\n💬 Message: "${msg.actionableData.message}"`;
+                          finalContent += `\n\n🚀 **Launch ${msg.actionableData.channel} campaign?**`;
                         }
 
                         return {
