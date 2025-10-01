@@ -6,12 +6,14 @@ interface ChatMessageProps {
   message: MessageType;
   onLaunchCampaign?: (messageId: string, actionableData: ActionableData) => void;
   isLaunching?: boolean;
+  onToggleSidePanel?: (campaignData?: any) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ 
-  message, 
+const ChatMessage: React.FC<ChatMessageProps> = ({
+  message,
   onLaunchCampaign,
-  isLaunching = false
+  isLaunching = false,
+  onToggleSidePanel
 }) => {
   const handleLaunchCampaign = () => {
     if (message.actionableData && onLaunchCampaign) {
@@ -72,7 +74,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
             {/* Launch Button */}
             <Button
-              onClick={handleLaunchCampaign}
+              onClick={() => onToggleSidePanel?.(message.actionableData)}
               disabled={isLaunching}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white w-full"
@@ -83,7 +85,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                   Launching...
                 </>
               ) : (
-                `🚀 Launch ${message.actionableData.channel} Campaign`
+                `🚀 Review ${message.actionableData.channel} Campaign`
               )}
             </Button>
           </div>

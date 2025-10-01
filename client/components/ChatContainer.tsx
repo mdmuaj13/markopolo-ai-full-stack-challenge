@@ -9,6 +9,7 @@ import SidePanel from '@/components/SidePanel';
 
 const ChatContainer = () => {
 	const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+	const [selectedCampaignData, setSelectedCampaignData] = useState<any>(null);
 	const [initialPayload, setInitialPayload] = useState<any>(null);
 
 	useEffect(() => {
@@ -42,8 +43,13 @@ const ChatContainer = () => {
 		scrollToBottom();
 	}, [messages]);
 
-	const toggleSidePanel = () => {
-		setIsSidePanelOpen(!isSidePanelOpen);
+	const toggleSidePanel = (campaignData?: any) => {
+		if (campaignData) {
+			setSelectedCampaignData(campaignData);
+			setIsSidePanelOpen(true);
+		} else {
+			setIsSidePanelOpen(!isSidePanelOpen);
+		}
 	};
 
 	return (
@@ -61,6 +67,7 @@ const ChatContainer = () => {
 								message={message}
 								onLaunchCampaign={handleLaunchCampaign}
 								isLaunching={launchingCampaigns.has(message.id)}
+								onToggleSidePanel={toggleSidePanel}
 							/>
 						))}
 
@@ -84,7 +91,11 @@ const ChatContainer = () => {
 				</div>
 
 				{/* Side Panel */}
-				<SidePanel isOpen={isSidePanelOpen} onToggle={toggleSidePanel} />
+				<SidePanel
+					isOpen={isSidePanelOpen}
+					onToggle={() => toggleSidePanel()}
+					campaignData={selectedCampaignData}
+				/>
 			</div>
 
 			<ChatInput

@@ -10,62 +10,12 @@ from ..source.service import (
     get_facebook_page_mock_data,
     get_crm_mock_data,
 )
-
-
-def generate_comprehensive_response(
-    message: str, data_sources: List[schema.DataSource], channels: List[str] = None
-) -> str:
-    """Generate a comprehensive response based on input parameters with actionable data"""
-
-    # Example response with embedded actionable data
-    response = f"""
-I'll provide you with a comprehensive analysis and response. This is a simulated AI assistant that can help you with various tasks including:
-
-1. **Data Analysis**: I can analyze data from multiple sources you've provided including {", ".join([ds.name for ds in data_sources]) if data_sources else "various sources"}.
-
-2. **Multi-Channel Communication**: {"Your selected channels (" + ", ".join(channels) + ") will be used for distributing this information." if channels else "I can communicate through multiple channels when configured."}
-
-3. **Real-time Processing**: This streaming response demonstrates real-time processing capabilities, allowing for immediate feedback and interaction.
-
-After analyzing your request, I've identified some actionable items that need attention:
-
-4. **Contextual Understanding**: I analyze your request in context with available data sources and preferred communication channels to provide the most relevant response.
-
-This streaming response is designed to simulate a real AI assistant that can:
-- Process complex queries
-- Access multiple data sources simultaneously
-- Provide real-time feedback
-- Adapt responses based on available context
-- Stream information as it becomes available
-- Extract actionable insights from conversations
-
---actionable--
-{{
-  "time": "{datetime.now().isoformat()}",
-  "message": "Stock clearance offer.. Crafted message here.",
-  "channel": "email",
-  "audience": [
-    {{
-      "email": "customer1@example.com",
-      "name": "John Doe"
-    }},
-    {{
-      "email": "customer2@example.com",
-      "name": "Jane Smith"
-    }}
-  ]
-}}
---actionable--
-
-Thank you for your query, and I'm here to help with any follow-up questions or additional analysis you might need.
-    """.strip()
-
-    return response
+from .generatellmservice import generate_comprehensive_response
 
 
 async def chat_stream_generator(request: Request, chat_data: schema.ChatSchema):
     """
-    Generates server-sent events with chat response content over 20 seconds.
+    Generates server-sent events with chat response content over 10 seconds.
     The loop will stop if the client disconnects.
     """
 
