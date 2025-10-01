@@ -6,11 +6,16 @@ class EmailRecipient(BaseModel):
     name: Optional[str] = None
 
 class BulkEmailSchema(BaseModel):
-    recipients: List[EmailRecipient]
-    subject: str
-    body: str
-    from_email: EmailStr
-    from_name: Optional[str] = None
+    time: str
+    message: str
+    channel: str
+    audience: List[EmailRecipient]
+
+class CampaignCreateSchema(BaseModel):
+    time: str
+    message: str
+    channel: str
+    audience: List[EmailRecipient]
 
 class EmailStatusSchema(BaseModel):
     campaign_id: str

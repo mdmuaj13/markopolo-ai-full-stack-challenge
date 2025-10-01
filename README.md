@@ -4,25 +4,52 @@ A full-stack web application built with Next.js and FastAPI for managing AI camp
 
 ## 🚀 Quick Start
 
-1. **Prerequisites**
+### Option 1: Docker (Recommended)
 
-   - Node.js (v16 or later)
-   - Python (3.8 or later)
-   - pnpm (recommended) or npm
+1. **Prerequisites**
+   - Docker
+   - Docker Compose
 
 2. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd marko-challenge
+   ```
 
+3. **Start with Docker**
+   ```bash
+   # Build and start all services
+   docker-compose up --build
+
+   # Or run in background
+   docker-compose up -d --build
+   ```
+
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Docs (Swagger UI): http://localhost:8000/docs
+
+5. **Stop the application**
+   ```bash
+   docker-compose down
+   ```
+
+### Option 2: Local Development
+
+1. **Prerequisites**
+   - Node.js (v20 or later)
+   - Python (3.11 or later)
+   - Redis (for background tasks)
+   - npm or pnpm
+
+2. **Clone the repository**
    ```bash
    git clone <repository-url>
    cd marko-challenge
    ```
 
 3. **Start the application**
-
-   You can start both client and server together or individually:
-
-   #### Start both client and server (recommended for development)
-
    ```bash
    # Start both frontend and backend
    npm run dev
@@ -40,36 +67,71 @@ marko-challenge/
 ├── client/                    # Next.js frontend
 │   ├── app/                   # App router and pages
 │   ├── public/                # Static files
-│   ├── package.json           # Frontend dependencies
-│   └── ...
+│   ├── Dockerfile             # Client Docker config
+│   └── package.json           # Frontend dependencies
 │
 ├── server/                    # FastAPI backend
 │   ├── src/                   # Source code
-│   │   └── main.py           # Main FastAPI application
+│   │   ├── main.py           # Main FastAPI application
+│   │   ├── celery_app.py     # Celery configuration
+│   │   └── api/              # API routes
+│   ├── Dockerfile             # Server Docker config
 │   └── requirements.txt       # Python dependencies
 │
-├── .gitignore                 # Git ignore rules
-└── start.sh                  # Startup script
+├── docker-compose.yml         # Docker orchestration
+├── .dockerignore              # Docker ignore rules
+└── .gitignore                 # Git ignore rules
 ```
 
 ## 🛠️ Development
 
-### Frontend Development
+### Docker Commands
+
+```bash
+# View logs
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f client
+docker-compose logs -f server
+
+# Rebuild specific service
+docker-compose up --build client
+docker-compose up --build server
+
+# Stop all services
+docker-compose down
+
+# Remove volumes
+docker-compose down -v
+```
+
+### Local Development (Without Docker)
+
+#### Frontend Development
 
 ```bash
 cd client
-pnpm install    # Install dependencies
-pnpm dev       # Start development server
+npm install    # Install dependencies
+npm run dev    # Start development server
 ```
 
-### Backend Development
+#### Backend Development
 
 ```bash
 cd server
 python -m venv venv
 source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
+
+# Start Redis (required for background tasks)
+redis-server
+
+# Start FastAPI server
 uvicorn src.main:app --reload
+
+# Start Celery worker (in separate terminal)
+celery -A src.celery_app.celery_app worker --loglevel=info
 ```
 
 ## 🌐 API Documentation

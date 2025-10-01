@@ -1,6 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { X, Mail, MessageSquare, Send } from 'lucide-react';
+import { useState } from 'react';
 
 interface CampaignData {
   channel: 'Email' | 'SMS' | 'WhatsApp';
@@ -16,10 +17,65 @@ interface SidePanelProps {
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, campaignData }) => {
-  const handleActivateCampaign = () => {
-    if (campaignData) {
-      console.log(`Activating ${campaignData.channel} campaign...`);
-      // Campaign activation logic here
+  const [isActivating, setIsActivating] = useState(false);
+  const [activationStatus, setActivationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleActivateCampaign = async () => {
+    if (!campaignData) return;
+
+    setIsActivating(true);
+    setActivationStatus('idle');
+    setErrorMessage('');
+
+    try {
+      const endpoint = getApiEndpoint(campaignData.channel);
+      const response = await fetch(`http://localhost:8000${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          time: campaignData.time,
+          message: campaignData.message,
+          channel: campaignData.channel.toLowerCase(),
+          audience: campaignData.audience,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to activate campaign');
+      }
+
+      const result = await response.json();
+      console.log(`${campaignData.channel} campaign activated:`, result);
+      setActivationStatus('success');
+
+      // Close panel after 3 seconds
+      setTimeout(() => {
+        onToggle();
+        setActivationStatus('idle');
+      }, 3000);
+    } catch (error) {
+      console.error(`Error activating ${campaignData.channel} campaign:`, error);
+      setActivationStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Unknown error occurred');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const getApiEndpoint = (channel: string) => {
+    switch (channel) {
+      case 'Email':
+        return '/email/campaign/create';
+      case 'SMS':
+        return '/sms/campaign/create';
+      case 'WhatsApp':
+        return '/whatsapp/campaign/create';
+      default:
+        return '/email/campaign/create';
     }
   };
 
@@ -107,13 +163,60 @@ const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onToggle, campaignData })
               </div>
             </div>
 
+            {/* Status Messages */}
+            {activationStatus === 'success' && (
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-md flex items-start gap-3">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                    Campaign Activated Successfully!
+                  </p>
+                  <p className="text-xs text-green-600/80 dark:text-green-400/80 mt-1">
+                    Your {campaignData.channel.toLowerCase()} campaign has been scheduled and will be sent at the specified time.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activationStatus === 'error' && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-md flex items-start gap-3">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                    Activation Failed
+                  </p>
+                  <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+                    {errorMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Action Button */}
             <Button
               onClick={handleActivateCampaign}
+              disabled={isActivating}
               className={`w-full text-white ${getChannelColor()}`}
             >
-              <Send className="w-4 h-4 mr-2" />
-              Activate {campaignData.channel} Campaign
+              {isActivating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Activating...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Activate {campaignData.channel} Campaign
+                </>
+              )}
             </Button>
           </div>
         ) : (

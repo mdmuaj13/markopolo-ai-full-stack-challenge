@@ -1,52 +1,38 @@
-import random
 import uuid
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict
 from . import schema
+from .tasks import send_bulk_email_task, get_task_status, email_campaigns, schedule_campaign_task
 
-# In-memory storage for demo purposes
-email_campaigns: Dict[str, dict] = {}
 
 async def send_bulk_email(data: schema.BulkEmailSchema) -> dict:
-    """Send bulk emails to multiple recipients"""
+    """Queue bulk email sending task in Celery"""
     campaign_id = str(uuid.uuid4())
 
-    # Simulate sending emails
-    results = []
-    for recipient in data.recipients:
-        # Simulate random success/failure
-        status = random.choice(["sent", "sent", "sent", "failed"])  # 75% success rate
+    # Prepare recipients data for Celery task
+    recipients_data = [
+        {"email": recipient.email, "name": recipient.name}
+        for recipient in data.audience
+    ]
 
-        results.append({
-            "email": recipient.email,
-            "name": recipient.name,
-            "status": status,
-            "message_id": f"msg_{uuid.uuid4().hex[:12]}" if status == "sent" else None,
-            "error": "Invalid email address" if status == "failed" else None
-        })
-
-    # Store campaign data
-    campaign_data = {
-        "campaign_id": campaign_id,
-        "subject": data.subject,
-        "from_email": data.from_email,
-        "from_name": data.from_name,
-        "total_recipients": len(data.recipients),
-        "sent_count": len([r for r in results if r["status"] == "sent"]),
-        "failed_count": len([r for r in results if r["status"] == "failed"]),
-        "created_at": datetime.now().isoformat(),
-        "results": results
-    }
-
-    email_campaigns[campaign_id] = campaign_data
+    # Queue the task in Celery
+    task = send_bulk_email_task.delay(
+        campaign_id=campaign_id,
+        subject=f"Email Campaign - {data.time}",
+        body=data.message,
+        from_email="noreply@example.com",  # Default sender
+        from_name="Marketing Team",
+        recipients=recipients_data
+    )
 
     return {
         "campaign_id": campaign_id,
-        "status": "completed",
-        "total_recipients": campaign_data["total_recipients"],
-        "sent_count": campaign_data["sent_count"],
-        "failed_count": campaign_data["failed_count"],
-        "results": results
+        "task_id": task.id,
+        "status": "queued",
+        "message": "Bulk email task has been queued for processing",
+        "total_recipients": len(data.audience),
+        "channel": data.channel,
+        "scheduled_time": data.time
     }
 
 
@@ -60,7 +46,7 @@ def get_campaign_status(campaign_id: str) -> dict:
             "campaign_id": campaign_id
         }
 
-    return {
+    response = {
         "campaign_id": campaign["campaign_id"],
         "subject": campaign["subject"],
         "from_email": campaign["from_email"],
@@ -69,8 +55,23 @@ def get_campaign_status(campaign_id: str) -> dict:
         "sent_count": campaign["sent_count"],
         "failed_count": campaign["failed_count"],
         "created_at": campaign["created_at"],
-        "status": "completed"
+        "status": campaign["status"]
     }
+
+    # Add task_id if available
+    if "task_id" in campaign:
+        response["task_id"] = campaign["task_id"]
+
+    # Add completion time if available
+    if "completed_at" in campaign:
+        response["completed_at"] = campaign["completed_at"]
+
+    # Add error information if available
+    if "error" in campaign:
+        response["error"] = campaign["error"]
+        response["failed_at"] = campaign.get("failed_at")
+
+    return response
 
 
 def get_all_campaigns() -> dict:
@@ -82,7 +83,9 @@ def get_all_campaigns() -> dict:
             "total_recipients": data["total_recipients"],
             "sent_count": data["sent_count"],
             "failed_count": data["failed_count"],
-            "created_at": data["created_at"]
+            "created_at": data["created_at"],
+            "status": data["status"],
+            "task_id": data.get("task_id")
         }
         for campaign_id, data in email_campaigns.items()
     ]
@@ -93,4 +96,52 @@ def get_all_campaigns() -> dict:
     return {
         "total_campaigns": len(campaigns_list),
         "campaigns": campaigns_list
+    }
+
+
+def get_task_status_service(task_id: str) -> dict:
+    """Get the status of a Celery task by task ID"""
+    return get_task_status(task_id)
+
+
+async def create_campaign(data: schema.CampaignCreateSchema) -> dict:
+    """Create a campaign and schedule it for execution"""
+    campaign_id = str(uuid.uuid4())
+
+    # Prepare recipients data for Celery task
+    recipients_data = [
+        {"email": recipient.email, "name": recipient.name}
+        for recipient in data.audience
+    ]
+
+    # Store campaign info
+    email_campaigns[campaign_id] = {
+        "campaign_id": campaign_id,
+        "subject": f"Email Campaign - {data.time}",
+        "message": data.message,
+        "channel": data.channel,
+        "scheduled_time": data.time,
+        "total_recipients": len(data.audience),
+        "sent_count": 0,
+        "failed_count": 0,
+        "created_at": datetime.now().isoformat(),
+        "status": "scheduled"
+    }
+
+    # Schedule the campaign task
+    task = schedule_campaign_task.delay(
+        campaign_id=campaign_id,
+        scheduled_time=data.time,
+        message=data.message,
+        recipients=recipients_data
+    )
+
+    return {
+        "campaign_id": campaign_id,
+        "task_id": task.id,
+        "status": "scheduled",
+        "message": "Campaign has been scheduled successfully",
+        "scheduled_time": data.time,
+        "total_recipients": len(data.audience),
+        "channel": data.channel
     }

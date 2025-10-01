@@ -75,18 +75,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             {/* Launch Button */}
             <Button
               onClick={() => onToggleSidePanel?.(message.actionableData)}
-              disabled={isLaunching}
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white w-full"
             >
-              {isLaunching ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Launching...
-                </>
-              ) : (
-                `🚀 Review ${message.actionableData.channel} Campaign`
-              )}
+              🚀 Review {message.actionableData.channel} Campaign
             </Button>
           </div>
         )}
